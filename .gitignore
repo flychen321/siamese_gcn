@@ -13,3 +13,4 @@
 *.pkl
 *log/*
 *opts.json
+*.iml
