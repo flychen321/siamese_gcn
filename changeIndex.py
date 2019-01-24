@@ -14,28 +14,28 @@ def copyfolder(src,dst):
     for tt in files:   
         copyfile(src+'/'+tt,dst+'/'+tt)
 
-# train_save_path = original_path + '/val_new'
-# data_path=original_path+'/val'
-# if not os.path.isdir(train_save_path):
-#     os.mkdir(train_save_path)
-#
-# reid_index=0
-# folders=os.listdir(data_path)
-# for foldernames in folders:
-#     copyfolder(data_path+'/'+foldernames,train_save_path+'/'+str(reid_index).zfill(4))
-#     reid_index=reid_index+1
-#
-#
-# train_save_path = original_path + '/train_new'
-# data_path=original_path+'/train'
-# if not os.path.isdir(train_save_path):
-#     os.mkdir(train_save_path)
-#
-# reid_index=0
-# folders=os.listdir(data_path)
-# for foldernames in folders:
-#     copyfolder(data_path+'/'+foldernames,train_save_path+'/'+str(reid_index).zfill(4))
-#     reid_index=reid_index+1
+train_save_path = original_path + '/val_new'
+data_path=original_path+'/val'
+if not os.path.isdir(train_save_path):
+    os.mkdir(train_save_path)
+
+reid_index=0
+folders=os.listdir(data_path)
+for foldernames in folders:
+    copyfolder(data_path+'/'+foldernames,train_save_path+'/'+str(reid_index).zfill(4))
+    reid_index=reid_index+1
+
+
+train_save_path = original_path + '/train_new'
+data_path=original_path+'/train'
+if not os.path.isdir(train_save_path):
+    os.mkdir(train_save_path)
+
+reid_index=0
+folders=os.listdir(data_path)
+for foldernames in folders:
+    copyfolder(data_path+'/'+foldernames,train_save_path+'/'+str(reid_index).zfill(4))
+    reid_index=reid_index+1
 
 
 train_save_path = original_path + '/train_all_new'

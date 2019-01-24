@@ -118,20 +118,22 @@ class SggDataset(Dataset):
             pass
 
     def __getitem__(self, index):
+        num = 4
         label = self.train_labels[index].item()
-        if len(self.label_to_indices[label]) >= 4:
-            index = np.random.choice(self.label_to_indices[label], size=4, replace=False)
+        if len(self.label_to_indices[label]) >= num:
+            index = np.random.choice(self.label_to_indices[label], size=num, replace=False)
         else:
             index1 = np.random.choice(self.label_to_indices[label], size=self.label_to_indices[label], replace=False)
-            index2 = np.random.choice(self.label_to_indices[label], size=self.label_to_indices[label], replace=False)
+            index2 = np.random.choice(self.label_to_indices[label], size=num - self.label_to_indices[label], replace=False)
             index = np.concatenate((index1, index2))
-        img = self.train_data[index]
-        label = self.train_labels[index]
-
-        for i in range(len(img)):
-            img[i] = self.transform(default_loader(img[i]))
-            # if self.transform is not None:
-            #     img[i] = self.transform(img[i])
+        img = []
+        label = []
+        for i in range(num):
+            img.append(self.train_data[index[0]])
+            label.append(self.train_labels[index[0]])
+            img[i] = default_loader(img[i])
+            if self.transform is not None:
+                img[i] = self.transform(img[i])
 
         return img, label
 
