@@ -96,6 +96,49 @@ class SiameseDataset(Dataset):
         return len(self.mnist_dataset)
 
 
+class SggDataset(Dataset):
+    """
+    Train: For each sample creates randomly a positive or a negative pair
+    Test: Creates fixed pairs for testing
+    """
+
+    def __init__(self, base_dataset, train=True):
+        super(SggDataset, self).__init__()
+        self.base_dataset = base_dataset
+        self.train = train
+        self.transform = self.base_dataset.transform
+
+        if self.train:
+            self.train_labels = np.array(self.base_dataset.imgs)[:, 1]
+            self.train_data = np.array(self.base_dataset.imgs)[:, 0]
+            self.labels_set = set(self.train_labels)
+            self.label_to_indices = {label: np.where(self.train_labels == label)[0]
+                                     for label in self.labels_set}
+        else:
+            pass
+
+    def __getitem__(self, index):
+        label = self.train_labels[index].item()
+        if len(self.label_to_indices[label]) >= 4:
+            index = np.random.choice(self.label_to_indices[label], size=4, replace=False)
+        else:
+            index1 = np.random.choice(self.label_to_indices[label], size=self.label_to_indices[label], replace=False)
+            index2 = np.random.choice(self.label_to_indices[label], size=self.label_to_indices[label], replace=False)
+            index = np.concatenate((index1, index2))
+        img = self.train_data[index]
+        label = self.train_labels[index]
+
+        for i in range(len(img)):
+            img[i] = self.transform(default_loader(img[i]))
+            # if self.transform is not None:
+            #     img[i] = self.transform(img[i])
+
+        return img, label
+
+    def __len__(self):
+        return len(self.base_dataset)
+
+
 class TripletMNIST(Dataset):
     """
     Train: For each sample (anchor) randomly chooses a positive and negative samples

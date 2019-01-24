@@ -207,7 +207,6 @@ class SiameseNet(nn.Module):
         output2 = self.embedding_net(x2)
         
         feature = (output1 - output2).pow(2)
-        # feature = (output1 - output2)
         feature = self.bn(feature)
         feature = self.fc(feature)
         result = self.classifier(feature)
@@ -271,9 +270,16 @@ class GCN(nn.Module):
 
 
 class Sggnn(nn.Module):
-    def __init__(self, basemodel):
+    def __init__(self, basemodel=SiameseNet(ft_net_dense())):
         super(Sggnn, self).__init__()
         self.basemodel = basemodel
+        self.rf = ReFineBlock(layer=2)
 
     def forward(self, x):
-        return x
+        x_p = x[0]
+        x_g = x[1:]
+        for i in range(len(x_p)):
+            d = self.basemodel(x_p[0], x_g)
+            t = self.rf(d)
+
+

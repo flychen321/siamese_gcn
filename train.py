@@ -25,7 +25,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from scipy.io import loadmat
 from scipy.io import savemat
-from datasets import SiameseDataset
+from datasets import SiameseDataset, SggDataset
 from model import ft_net_dense, SiameseNet
 from losses import ContrastiveLoss, SigmoidLoss
 ######################################################################
@@ -33,7 +33,7 @@ from losses import ContrastiveLoss, SigmoidLoss
 parser = argparse.ArgumentParser(description='Training')
 parser.add_argument('--name', default='ft_DesNet121', type=str, help='output model name')
 parser.add_argument('--data_dir', default='data/market/pytorch', type=str, help='training dir path')
-parser.add_argument('--batchsize', default=32, type=int, help='batchsize')
+parser.add_argument('--batchsize', default=8, type=int, help='batchsize')
 parser.add_argument('--erasing_p', default=0.8, type=float, help='Random Erasing probability, in [0,1]')
 parser.add_argument('--use_dense', action='store_true', help='use densenet121')
 parser.add_argument('--use_soft_label', default=True, type=bool, help='use_soft_label')
@@ -109,13 +109,16 @@ print('dataset_sizes[val] = %s' % dataset_sizes['val'])
 
 dataset = datasets.ImageFolder(dataset_train_dir, data_transforms['train'])
 dataloaders = {}
-dataloaders['train'] = DataLoader(SiameseDataset(datasets.ImageFolder(dataset_train_dir, data_transforms['train']), train=True),
+# dataloaders['train'] = DataLoader(SiameseDataset(datasets.ImageFolder(dataset_train_dir, data_transforms['train']), train=True),
+#                                   batch_size=opt.batchsize,
+#                                   shuffle=True, num_workers=8)
+# dataloaders['val'] = DataLoader(SiameseDataset(datasets.ImageFolder(dataset_val_dir, data_transforms['val']), train=True),
+#                                 batch_size=opt.batchsize,
+#                                 shuffle=True, num_workers=8)
+
+dataloaders['train'] = DataLoader(SggDataset(datasets.ImageFolder(dataset_train_dir, data_transforms['train']), train=True),
                                   batch_size=opt.batchsize,
                                   shuffle=True, num_workers=8)
-dataloaders['val'] = DataLoader(SiameseDataset(datasets.ImageFolder(dataset_val_dir, data_transforms['val']), train=True),
-                                batch_size=opt.batchsize,
-                                shuffle=True, num_workers=8)
-
 # for data in dataloaders['train']:
 #     print(data)
 
