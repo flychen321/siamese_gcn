@@ -27,7 +27,7 @@ from scipy.io import loadmat
 from scipy.io import savemat
 from datasets import SiameseDataset
 from model import ft_net_dense, SiameseNet
-from losses import ContrastiveLoss
+from losses import ContrastiveLoss, SigmoidLoss
 ######################################################################
 # Options
 parser = argparse.ArgumentParser(description='Training')
@@ -182,11 +182,13 @@ embedding_net = ft_net_dense()
 model = SiameseNet(embedding_net)
 if use_gpu:
     model.cuda()
-loss_fn = ContrastiveLoss(margin)
+# loss_fn = ContrastiveLoss(margin)
+loss_fn = SigmoidLoss()
+# loss_fn = nn.CrossEntropyLoss()
 lr = 1e-3
 optimizer = optim.Adam(model.parameters(), lr=lr)
 scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
-n_epochs = 2
+n_epochs = 20
 log_interval = 100
 
 model = train_model(dataloaders['train'], model, loss_fn, optimizer, num_epochs=n_epochs)

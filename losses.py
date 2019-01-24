@@ -1,6 +1,24 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
+
+
+class SigmoidLoss(nn.Module):
+    """
+    Contrastive loss
+    Takes embeddings of two samples and a target label == 1 if samples are from the same class and label == 0 otherwise
+    """
+
+    def __init__(self):
+        super(SigmoidLoss, self).__init__()
+        self.eps = 1e-9
+
+    def forward(self, predit, target, size_average=True):
+        predit = F.sigmoid(predit)
+        losses = -(target.float() * torch.log(predit.squeeze()) + (1.0 - target).float() * torch.log(1 - predit.squeeze()))
+        # losses = (predit.squeeze() - target.float()).pow(2)
+        return losses.mean() if size_average else losses.sum()
 
 
 class ContrastiveLoss(nn.Module):
@@ -78,7 +96,6 @@ class OnlineTripletLoss(nn.Module):
         self.triplet_selector = triplet_selector
 
     def forward(self, embeddings, target):
-
         triplets = self.triplet_selector.get_triplets(embeddings, target)
 
         if embeddings.is_cuda:

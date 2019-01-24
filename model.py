@@ -199,14 +199,21 @@ class SiameseNet(nn.Module):
         super(SiameseNet, self).__init__()
         self.embedding_net = embedding_net
         self.bn = nn.BatchNorm1d(1024)
+        self.fc = FcBlock()
+        self.classifier = ClassBlock(input_dim=512, class_num=1)
 
     def forward(self, x1, x2):
         output1 = self.embedding_net(x1)
         output2 = self.embedding_net(x2)
-        # feature = torch.square(output1 - output2)
-        # feature = self.bn(feature)
-        # return output1, output2, feature
-        return output1, output2
+        
+        feature = (output1 - output2).pow(2)
+        # feature = (output1 - output2)
+        feature = self.bn(feature)
+        feature = self.fc(feature)
+        result = self.classifier(feature)
+        return result
+
+        # return output1, output2
 
     def get_embedding(self, x):
         return self.embedding_net(x)
