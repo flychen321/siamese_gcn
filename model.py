@@ -279,6 +279,7 @@ class Sggnn(nn.Module):
         self.classifier = ClassBlock(input_dim=512, class_num=1)
 
     def forward(self, x):
+        use_gpu = torch.cuda.is_available()
         x_p = x[:, :, 0]
         x_p = x_p.unsqueeze(2)
         x_g = x[:, :, 1:]
@@ -295,6 +296,11 @@ class Sggnn(nn.Module):
         t = torch.FloatTensor(batch_size, num_p, num_g, len_feature).zero_()
         w = torch.FloatTensor(batch_size, num_g2, num_g2, len_feature).zero_()
         result = torch.FloatTensor(batch_size, num_p, num_g).zero_()
+        if use_gpu:
+            d = d.cuda()
+            t = t.cuda()
+            w = w.cuda()
+            result = result.cuda()
         for i in range(num_p):
             for j in range(num_g):
                 d[:, i, j] = self.basemodel(x_p[:, i], x_g[:, j])[0]
