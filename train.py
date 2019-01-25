@@ -26,14 +26,14 @@ from torch.utils.data import Dataset, DataLoader
 from scipy.io import loadmat
 from scipy.io import savemat
 from datasets import SiameseDataset, SggDataset
-from model import ft_net_dense, SiameseNet
+from model import ft_net_dense, SiameseNet, Sggnn
 from losses import ContrastiveLoss, SigmoidLoss
 ######################################################################
 # Options
 parser = argparse.ArgumentParser(description='Training')
 parser.add_argument('--name', default='ft_DesNet121', type=str, help='output model name')
 parser.add_argument('--data_dir', default='data/market/pytorch', type=str, help='training dir path')
-parser.add_argument('--batchsize', default=8, type=int, help='batchsize')
+parser.add_argument('--batchsize', default=2, type=int, help='batchsize')
 parser.add_argument('--erasing_p', default=0.8, type=float, help='Random Erasing probability, in [0,1]')
 parser.add_argument('--use_dense', action='store_true', help='use densenet121')
 parser.add_argument('--use_soft_label', default=True, type=bool, help='use_soft_label')
@@ -140,7 +140,6 @@ def train_model(train_loader, model, loss_fn, optimizer, num_epochs=25):
 
         for batch_idx, (data, target) in enumerate(train_loader):
             target = target if len(target) > 0 else None
-            # target.transpose(0, 1)
             if not type(data) in (tuple, list):
                 data = (data,)
             if use_gpu:
@@ -183,7 +182,8 @@ with open('%s/opts.json' % dir_name, 'w') as fp:
 
 margin = 1.
 embedding_net = ft_net_dense()
-model = SiameseNet(embedding_net)
+# model = SiameseNet(embedding_net)
+model = Sggnn(SiameseNet(embedding_net))
 if use_gpu:
     model.cuda()
 # loss_fn = ContrastiveLoss(margin)

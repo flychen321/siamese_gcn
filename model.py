@@ -9,6 +9,7 @@ import os
 import numpy as np
 import math
 
+
 ######################################################################
 def weights_init_kaiming(m):
     classname = m.__class__.__name__
@@ -205,9 +206,9 @@ class SiameseNet(nn.Module):
     def forward(self, x1, x2):
         output1 = self.embedding_net(x1)
         output2 = self.embedding_net(x2)
-        
+
         feature = (output1 - output2).pow(2)
-        feature = self.bn(feature)
+        # feature = self.bn(feature)
         feature_fc = self.fc(feature)
         result = self.classifier(feature_fc)
         return feature, result
@@ -278,26 +279,33 @@ class Sggnn(nn.Module):
         self.classifier = ClassBlock(input_dim=512, class_num=1)
 
     def forward(self, x):
-        x_p = x[:, 0]
-        x_g = x[:, 1:]
+        x_p = x[:, :, 0]
+        x_p = x_p.unsqueeze(2)
+        x_g = x[:, :, 1:]
+        batch_size = len(x_p)
+        x_p = x_p.contiguous().view(len(x_p), (len(x_p[0]) * len(x_p[0][0])), len(x_p[0][0][0]),
+                                    len(x_p[0][0][0][0]), len(x_p[0][0][0][0][0]))
+        x_g = x_g.contiguous().view(len(x_g), (len(x_g[0]) * len(x_g[0][0])), len(x_g[0][0][0]),
+                                    len(x_g[0][0][0][0]), len(x_g[0][0][0][0][0]))
+        num_p = len(x_p[0])  # 8
+        num_g = len(x_g[0])  # 24
+        num_g2 = np.square(num_g)  # 24*24 = 576
         len_feature = 1024
-        d = torch.FloatTensor(len(x_p), len(x_g), len_feature).zero_()
-        t = torch.FloatTensor(len(x_p), len(x_g), len_feature).zero_()
-        w = torch.FloatTensor(len(x_g), len(x_g), len_feature).zero_()
-        result = torch.FloatTensor(len(x_p), len(x_g)).zero_()
-        for i in range(len(x_p)):
-            for j in range(len(x_g)):
-                d[i][j] = self.basemodel(x_p[i], x_g[j])[0]
-                t[i][j] = self.rf(d[i][j])[0]
-        for i in range(len(x_g)):
-            for j in range(len(x_g)):
-                w[i][j] = self.basemodel(x_g[i], x_g[j])[1]
+        d = torch.FloatTensor(batch_size, num_p, num_g, len_feature).zero_()
+        t = torch.FloatTensor(batch_size, num_p, num_g, len_feature).zero_()
+        w = torch.FloatTensor(batch_size, num_g2, num_g2, len_feature).zero_()
+        result = torch.FloatTensor(batch_size, num_p, num_g).zero_()
+        for i in range(num_p):
+            for j in range(num_g):
+                d[:, i, j] = self.basemodel(x_p[:, i], x_g[:, j])[0]
+                t[:, i, j] = self.rf(d[i][j])[0]
+        for i in range(num_g):
+            for j in range(num_g):
+                w[:, i, j] = self.basemodel(x_g[:, i], x_g[:, j])[1]
         d_new = torch.mm(t, w)
-        for i in range(len(x_p)):
-            for j in range(len(x_g)):
-                feature = self.fc(d_new[i][j])
+        for i in range(num_p):
+            for j in range(num_g):
+                feature = self.fc(d_new[:, i, j])
                 feature = self.classifier(feature)
-                result[i][j] = feature
+                result[:, i, j] = feature
         return result
-
-

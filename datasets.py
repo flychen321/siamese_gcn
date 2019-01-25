@@ -5,11 +5,13 @@ from torch.utils.data import Dataset
 from torch.utils.data.sampler import BatchSampler
 import torch
 
+
 def pil_loader(path):
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
     with open(path, 'rb') as f:
         img = Image.open(f)
         return img.convert('RGB')
+
 
 def accimage_loader(path):
     import accimage
@@ -19,12 +21,14 @@ def accimage_loader(path):
         # Potentially a decoding problem, fall back to PIL.Image
         return pil_loader(path)
 
+
 def default_loader(path):
     from torchvision import get_image_backend
     if get_image_backend() == 'accimage':
         return accimage_loader(path)
     else:
         return pil_loader(path)
+
 
 class SiameseDataset(Dataset):
     """
@@ -97,7 +101,7 @@ class SiameseDataset(Dataset):
         return len(self.mnist_dataset)
 
 
-class SggDataset(Dataset):
+class SggDataset_4images(Dataset):
     """
     Train: For each sample creates randomly a positive or a negative pair
     Test: Creates fixed pairs for testing
@@ -124,8 +128,9 @@ class SggDataset(Dataset):
         if len(self.label_to_indices[label]) >= num:
             index = np.random.choice(self.label_to_indices[label], size=num, replace=False)
         else:
-            index1 = np.random.choice(self.label_to_indices[label], size=self.label_to_indices[label], replace=False)
-            index2 = np.random.choice(self.label_to_indices[label], size=num - self.label_to_indices[label], replace=False)
+            index1 = np.random.choice(self.label_to_indices[label], size=len(self.label_to_indices[label]), replace=False)
+            index2 = np.random.choice(self.label_to_indices[label], size=num - len(self.label_to_indices[label]),
+                                      replace=False)
             index = np.concatenate((index1, index2))
         for i in range(num):
             img_temp = (self.train_data[index[0]])
@@ -145,6 +150,76 @@ class SggDataset(Dataset):
                 label = torch.cat((label, label_temp), 0)
 
         return img, label
+
+    def __len__(self):
+        return len(self.base_dataset)
+
+
+class SggDataset(Dataset):
+    """
+    Train: For each sample creates randomly a positive or a negative pair
+    Test: Creates fixed pairs for testing
+    """
+
+    def __init__(self, base_dataset, train=True):
+        super(SggDataset, self).__init__()
+        self.base_dataset = base_dataset
+        self.train = train
+        self.transform = self.base_dataset.transform
+
+        if self.train:
+            self.train_labels = np.array(self.base_dataset.imgs)[:, 1].astype(int)
+            self.train_data = np.array(self.base_dataset.imgs)[:, 0]
+            self.labels_set = set(self.train_labels)
+            self.label_to_indices = {label: np.where(self.train_labels == label)[0]
+                                     for label in self.labels_set}
+        else:
+            pass
+
+    def __getimgs_bylabel__(self, label, img_num):
+        if len(self.label_to_indices[label]) >= img_num:
+            index = np.random.choice(self.label_to_indices[label], size=img_num, replace=False)
+        else:
+            index1 = np.random.choice(self.label_to_indices[label], size=len(self.label_to_indices[label]), replace=False)
+            index2 = np.random.choice(self.label_to_indices[label], size=img_num - len(self.label_to_indices[label]),
+                                      replace=True)
+            index = np.concatenate((index1, index2))
+        for i in range(img_num):
+            img_temp = (self.train_data[index[i]])
+            label_temp = (self.train_labels[index[i]])
+            if type(label_temp) not in (tuple, list):
+                label_temp = (label_temp,)
+            label_temp = torch.LongTensor(label_temp)
+            img_temp = default_loader(img_temp)
+            if self.transform is not None:
+                img_temp = self.transform(img_temp)
+                img_temp = img_temp.unsqueeze(0)
+            if i == 0:
+                img = img_temp
+                label = label_temp
+            else:
+                img = torch.cat((img, img_temp), 0)
+                label = torch.cat((label, label_temp), 0)
+
+        return img, label
+
+
+    def __getitem__(self, index):
+        id_num = 8
+        img_num = 4
+        label1 = self.train_labels[index]
+        label2 = np.random.choice(list(self.labels_set - set([label1])), id_num - 1, replace=False)
+        label = np.concatenate(([label1], label2), 0)
+        for i in range(id_num):
+            img_temp, label_temp = self.__getimgs_bylabel__(label[i], img_num)
+            if i == 0:
+                img = img_temp.unsqueeze(0)
+                label_result = label_temp.unsqueeze(0)
+            else:
+                img = torch.cat((img, img_temp.unsqueeze(0)), 0)
+                label_result = torch.cat((label_result, label_temp.unsqueeze(0)), 0)
+
+        return img, label_result
 
     def __len__(self):
         return len(self.base_dataset)
@@ -215,8 +290,6 @@ class TripletMNIST(Dataset):
 
     def __len__(self):
         return len(self.mnist_dataset)
-
-
 
 
 class BalancedBatchSampler(BatchSampler):
