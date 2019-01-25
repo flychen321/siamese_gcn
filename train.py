@@ -149,7 +149,8 @@ def train_model(train_loader, model, loss_fn, optimizer, num_epochs=25):
                     target = target.cuda()
 
             optimizer.zero_grad()
-            outputs = model(*data)
+            # outputs = model(*data) # for contrastive loss
+            outputs, target = model(*data, target) # for SGGNN
 
             if type(outputs) not in (tuple, list):
                 outputs = (outputs,)

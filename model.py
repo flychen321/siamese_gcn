@@ -278,36 +278,50 @@ class Sggnn(nn.Module):
         self.fc = FcBlock()
         self.classifier = ClassBlock(input_dim=512, class_num=1)
 
-    def forward(self, x):
+    def forward(self, x, y):
         use_gpu = torch.cuda.is_available()
         x_p = x[:, :, 0]
         x_p = x_p.unsqueeze(2)
         x_g = x[:, :, 1:]
-        batch_size = len(x_p)
         x_p = x_p.contiguous().view(len(x_p), (len(x_p[0]) * len(x_p[0][0])), len(x_p[0][0][0]),
                                     len(x_p[0][0][0][0]), len(x_p[0][0][0][0][0]))
         x_g = x_g.contiguous().view(len(x_g), (len(x_g[0]) * len(x_g[0][0])), len(x_g[0][0][0]),
                                     len(x_g[0][0][0][0]), len(x_g[0][0][0][0][0]))
+
         num_p = len(x_p[0])  # 8
         num_g = len(x_g[0])  # 24
         num_g2 = np.square(num_g)  # 24*24 = 576
+        batch_size = len(x_p)
         len_feature = 1024
-        d = torch.FloatTensor(batch_size, num_p, num_g, len_feature).zero_()
-        d_new = torch.FloatTensor(batch_size, num_p, num_g, len_feature).zero_()
-        t = torch.FloatTensor(batch_size, num_p, num_g, len_feature).zero_()
-        w = torch.FloatTensor(batch_size, num_g, num_g).zero_()
-        result = torch.FloatTensor(batch_size, num_p, num_g).zero_()
+        d = torch.FloatTensor(batch_size, num_p, num_g, len_feature)
+        d_new = torch.FloatTensor(batch_size, num_p, num_g, len_feature)
+        t = torch.FloatTensor(batch_size, num_p, num_g, len_feature)
+        w = torch.FloatTensor(batch_size, num_g, num_g)
+        result = torch.FloatTensor(batch_size, num_p, num_g)
+        label = torch.LongTensor(batch_size, num_p, num_g)
         if use_gpu:
             d = d.cuda()
             d_new = d_new.cuda()
             t = t.cuda()
             w = w.cuda()
             result = result.cuda()
+            label = label.cuda()
+
+        y_p = y[:, :, 0]
+        y_p = y_p.unsqueeze(2)
+        y_g = y[:, :, 1:]
+        y_p = y_p.contiguous().view(len(y_p), (len(y_p[0]) * len(y_p[0][0])))
+        y_g = y_g.contiguous().view(len(y_g), (len(y_g[0]) * len(y_g[0][0])))
+
         print('batch_size = %d  num_p = %d  num_g = %d' % (batch_size, num_p, num_g))
         for i in range(num_p):
             for j in range(num_g):
                 d[:, i, j] = self.basemodel(x_p[:, i], x_g[:, j])[0]
                 t[:, i, j] = self.rf(d[:, i, j])
+                if y_p[:, i] == y_g[:, j]:
+                    label[:, i, j] = 1
+                else:
+                    label[:, i, j] = 0
         for i in range(num_g):
             for j in range(num_g):
                 w[:, i, j] = self.basemodel(x_g[:, i], x_g[:, j])[1]
@@ -319,5 +333,6 @@ class Sggnn(nn.Module):
                 feature = self.fc(d_new[:, i, j])
                 feature = self.classifier(feature)
                 result[:, i, j] = feature
-        print('run 6')
-        return result
+
+        print('run Sggnn foward success  !!!')
+        return result, label
