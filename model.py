@@ -294,7 +294,7 @@ class Sggnn(nn.Module):
         len_feature = 1024
         d = torch.FloatTensor(batch_size, num_p, num_g, len_feature).zero_()
         t = torch.FloatTensor(batch_size, num_p, num_g, len_feature).zero_()
-        w = torch.FloatTensor(batch_size, num_g2, num_g2, len_feature).zero_()
+        w = torch.FloatTensor(batch_size, num_g2, num_g2).zero_()
         result = torch.FloatTensor(batch_size, num_p, num_g).zero_()
         if use_gpu:
             d = d.cuda()
@@ -304,7 +304,7 @@ class Sggnn(nn.Module):
         for i in range(num_p):
             for j in range(num_g):
                 d[:, i, j] = self.basemodel(x_p[:, i], x_g[:, j])[0]
-                t[:, i, j] = self.rf(d[i][j])[0]
+                t[:, i, j] = self.rf(d[:, i, j])[0]
         for i in range(num_g):
             for j in range(num_g):
                 w[:, i, j] = self.basemodel(x_g[:, i], x_g[:, j])[1]
