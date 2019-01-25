@@ -33,7 +33,7 @@ from losses import ContrastiveLoss, SigmoidLoss
 parser = argparse.ArgumentParser(description='Training')
 parser.add_argument('--name', default='ft_DesNet121', type=str, help='output model name')
 parser.add_argument('--data_dir', default='data/market/pytorch', type=str, help='training dir path')
-parser.add_argument('--batchsize', default=2, type=int, help='batchsize')
+parser.add_argument('--batchsize', default=1, type=int, help='batchsize')
 parser.add_argument('--erasing_p', default=0.8, type=float, help='Random Erasing probability, in [0,1]')
 parser.add_argument('--use_dense', action='store_true', help='use densenet121')
 parser.add_argument('--use_soft_label', default=True, type=bool, help='use_soft_label')
@@ -131,7 +131,8 @@ dataloaders['train'] = DataLoader(SggDataset(datasets.ImageFolder(dataset_train_
 def train_model(train_loader, model, loss_fn, optimizer, num_epochs=25):
     global cnt
     since = time.time()
-    model.train()
+    # model.train()
+    model.eval()
     losses = []
     total_loss = 0
     for epoch in range(num_epochs):

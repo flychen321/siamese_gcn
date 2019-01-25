@@ -293,14 +293,17 @@ class Sggnn(nn.Module):
         num_g2 = np.square(num_g)  # 24*24 = 576
         len_feature = 1024
         d = torch.FloatTensor(batch_size, num_p, num_g, len_feature).zero_()
+        d_new = torch.FloatTensor(batch_size, num_p, num_g, len_feature).zero_()
         t = torch.FloatTensor(batch_size, num_p, num_g, len_feature).zero_()
-        w = torch.FloatTensor(batch_size, num_g2, num_g2).zero_()
+        w = torch.FloatTensor(batch_size, num_g, num_g).zero_()
         result = torch.FloatTensor(batch_size, num_p, num_g).zero_()
         if use_gpu:
             d = d.cuda()
+            d_new = d_new.cuda()
             t = t.cuda()
             w = w.cuda()
             result = result.cuda()
+        print('batch_size = %d  num_p = %d  num_g = %d' % (batch_size, num_p, num_g))
         for i in range(num_p):
             for j in range(num_g):
                 d[:, i, j] = self.basemodel(x_p[:, i], x_g[:, j])[0]
@@ -308,10 +311,13 @@ class Sggnn(nn.Module):
         for i in range(num_g):
             for j in range(num_g):
                 w[:, i, j] = self.basemodel(x_g[:, i], x_g[:, j])[1]
-        d_new = torch.mm(t, w)
+        # w need to be normalized
+        for i in range(t.shape[-1]):
+            d_new[:, :, :, i] = torch.bmm(t[:, :, :, i], w)
         for i in range(num_p):
             for j in range(num_g):
                 feature = self.fc(d_new[:, i, j])
                 feature = self.classifier(feature)
                 result[:, i, j] = feature
+        print('run 6')
         return result
