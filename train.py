@@ -140,6 +140,7 @@ def train_model(train_loader, model, loss_fn, optimizer, num_epochs=25):
 
         for batch_idx, (data, target) in enumerate(train_loader):
             target = target if len(target) > 0 else None
+            # target.transpose(0, 1)
             if not type(data) in (tuple, list):
                 data = (data,)
             if use_gpu:

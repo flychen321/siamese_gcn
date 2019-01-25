@@ -208,9 +208,9 @@ class SiameseNet(nn.Module):
         
         feature = (output1 - output2).pow(2)
         feature = self.bn(feature)
-        feature = self.fc(feature)
-        result = self.classifier(feature)
-        return result
+        feature_fc = self.fc(feature)
+        result = self.classifier(feature_fc)
+        return feature, result
 
         # return output1, output2
 
@@ -227,9 +227,9 @@ class GraphConvolution(nn.Module):
         super(GraphConvolution, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.weight = Parameter(torch.FloatTensor(in_features, out_features))
+        self.weight = torch.FloatTensor(in_features, out_features)
         if bias:
-            self.bias = Parameter(torch.FloatTensor(out_features))
+            self.bias = torch.FloatTensor(out_features)
         else:
             self.register_parameter('bias', None)
         self.reset_parameters()
@@ -274,12 +274,30 @@ class Sggnn(nn.Module):
         super(Sggnn, self).__init__()
         self.basemodel = basemodel
         self.rf = ReFineBlock(layer=2)
+        self.fc = FcBlock()
+        self.classifier = ClassBlock(input_dim=512, class_num=1)
 
     def forward(self, x):
-        x_p = x[0]
-        x_g = x[1:]
+        x_p = x[:, 0]
+        x_g = x[:, 1:]
+        len_feature = 1024
+        d = torch.FloatTensor(len(x_p), len(x_g), len_feature).zero_()
+        t = torch.FloatTensor(len(x_p), len(x_g), len_feature).zero_()
+        w = torch.FloatTensor(len(x_g), len(x_g), len_feature).zero_()
+        result = torch.FloatTensor(len(x_p), len(x_g)).zero_()
         for i in range(len(x_p)):
-            d = self.basemodel(x_p[0], x_g)
-            t = self.rf(d)
+            for j in range(len(x_g)):
+                d[i][j] = self.basemodel(x_p[i], x_g[j])[0]
+                t[i][j] = self.rf(d[i][j])[0]
+        for i in range(len(x_g)):
+            for j in range(len(x_g)):
+                w[i][j] = self.basemodel(x_g[i], x_g[j])[1]
+        d_new = torch.mm(t, w)
+        for i in range(len(x_p)):
+            for j in range(len(x_g)):
+                feature = self.fc(d_new[i][j])
+                feature = self.classifier(feature)
+                result[i][j] = feature
+        return result
 
 

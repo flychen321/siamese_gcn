@@ -3,6 +3,7 @@ from PIL import Image
 from torchvision import datasets, models, transforms
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import BatchSampler
+import torch
 
 def pil_loader(path):
     # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
@@ -109,7 +110,7 @@ class SggDataset(Dataset):
         self.transform = self.base_dataset.transform
 
         if self.train:
-            self.train_labels = np.array(self.base_dataset.imgs)[:, 1]
+            self.train_labels = np.array(self.base_dataset.imgs)[:, 1].astype(int)
             self.train_data = np.array(self.base_dataset.imgs)[:, 0]
             self.labels_set = set(self.train_labels)
             self.label_to_indices = {label: np.where(self.train_labels == label)[0]
@@ -126,14 +127,22 @@ class SggDataset(Dataset):
             index1 = np.random.choice(self.label_to_indices[label], size=self.label_to_indices[label], replace=False)
             index2 = np.random.choice(self.label_to_indices[label], size=num - self.label_to_indices[label], replace=False)
             index = np.concatenate((index1, index2))
-        img = []
-        label = []
         for i in range(num):
-            img.append(self.train_data[index[0]])
-            label.append(self.train_labels[index[0]])
-            img[i] = default_loader(img[i])
+            img_temp = (self.train_data[index[0]])
+            label_temp = (self.train_labels[index[0]])
+            if type(label_temp) not in (tuple, list):
+                label_temp = (label_temp,)
+            label_temp = torch.LongTensor(label_temp)
+            img_temp = default_loader(img_temp)
             if self.transform is not None:
-                img[i] = self.transform(img[i])
+                img_temp = self.transform(img_temp)
+                img_temp = img_temp.unsqueeze(0)
+            if i == 0:
+                img = img_temp
+                label = label_temp
+            else:
+                img = torch.cat((img, img_temp), 0)
+                label = torch.cat((label, label_temp), 0)
 
         return img, label
 
