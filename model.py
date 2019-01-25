@@ -304,7 +304,7 @@ class Sggnn(nn.Module):
         for i in range(num_p):
             for j in range(num_g):
                 d[:, i, j] = self.basemodel(x_p[:, i], x_g[:, j])[0]
-                t[:, i, j] = self.rf(d[:, i, j])[0]
+                t[:, i, j] = self.rf(d[:, i, j])
         for i in range(num_g):
             for j in range(num_g):
                 w[:, i, j] = self.basemodel(x_g[:, i], x_g[:, j])[1]

@@ -205,7 +205,7 @@ class SggDataset(Dataset):
 
 
     def __getitem__(self, index):
-        id_num = 8
+        id_num = 2
         img_num = 4
         label1 = self.train_labels[index]
         label2 = np.random.choice(list(self.labels_set - set([label1])), id_num - 1, replace=False)
