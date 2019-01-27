@@ -399,7 +399,7 @@ class Sggnn(nn.Module):
         x_p = x[:, 0]
         x_p = x_p.unsqueeze(1)
         x_g = x[:, 1:]
-
+        num_img = len(x[0])
         num_p_per_batch = len(x_p[0])  # 1
         num_g_per_batch = len(x_g[0])  # 3
         num_p = len(x_p) * len(x_p[0])  # 8
@@ -409,7 +409,10 @@ class Sggnn(nn.Module):
         d = torch.FloatTensor(batch_size, batch_size, num_p_per_batch, num_g_per_batch, len_feature).zero_()
         d_new = torch.FloatTensor(batch_size, batch_size, num_p_per_batch, num_g_per_batch, len_feature).zero_()
         t = torch.FloatTensor(batch_size, batch_size, num_p_per_batch, num_g_per_batch, len_feature).zero_()
-        w = torch.FloatTensor(batch_size, batch_size, num_g_per_batch, num_g_per_batch, 1).zero_()
+        # this w for dynamic calculate the weight
+        # w = torch.FloatTensor(batch_size, batch_size, num_g_per_batch, num_g_per_batch, 1).zero_()
+        # this w for calculate the weight by label
+        w = torch.FloatTensor(batch_size, batch_size, num_g_per_batch, num_g_per_batch).zero_()
         result = torch.FloatTensor(batch_size, batch_size, num_p_per_batch, num_g_per_batch).zero_()
         label = torch.LongTensor(batch_size, batch_size, num_p_per_batch, num_g_per_batch).zero_()
         if use_gpu:
@@ -442,20 +445,27 @@ class Sggnn(nn.Module):
 
             for i in range(num_g_per_batch):
                 for j in range(num_g_per_batch):
-                    w[k, :, i, j] = self.basemodel(x_g[:, i], x_g_temp[:, j])[1]
+                    # w[k, :, i, j] = self.basemodel(x_g[:, i], x_g_temp[:, j])[1]
+                    w[k, :, i, j] = torch.where(y_g[:, i] == y_temp[:, j], torch.full_like(y_g[:, i], 1),
+                                                torch.full_like(y_g[:, i], 0))
+
+        d = d.reshape(batch_size, -1, len_feature)
+        d_new = d_new.reshape(batch_size, -1, len_feature)
+        t = t.reshape(batch_size, -1, len_feature)
+        w = w.reshape(batch_size * (num_img - 1), -1)
+        label = label.reshape(batch_size, -1)
+        result = result.reshape(batch_size, -1)
 
         # w need to be normalized
-        for i in range(batch_size):
-            w[i] = self.preprocess_adj(w[i])
-        for i in range(t.shape[-1]):
-            d_new[:, :, :, i] = torch.bmm(t[:, :, :, i], w)
+        w = self.preprocess_adj(w)
+        # for i in range(t.shape[-1]):
+        #     d_new[:, :, i] = torch.mm(t[:, :, i], w)
         d_new = d
 
         for i in range(num_p):
-            for j in range(num_g):
-                feature = self.fc(d_new[:, i, j])
-                feature = self.classifier(feature)
-                result[:, i, j] = feature
+            feature = self.fc(d_new[i, :])
+            feature = self.classifier(feature)
+            result[i, :] = feature.squeeze()
 
         # label = torch.randint(0, 2, result.shape).cuda()
 
