@@ -407,7 +407,6 @@ class Sggnn(nn.Module):
         num_g2 = np.square(num_g)  # 24*24 = 576
         len_feature = 1024
         d = torch.FloatTensor(batch_size, batch_size, num_p_per_batch, num_g_per_batch, len_feature).zero_()
-        d_new = torch.FloatTensor(batch_size, batch_size, num_p_per_batch, num_g_per_batch, len_feature).zero_()
         t = torch.FloatTensor(batch_size, batch_size, num_p_per_batch, num_g_per_batch, len_feature).zero_()
         # this w for dynamic calculate the weight
         # w = torch.FloatTensor(batch_size, batch_size, num_g_per_batch, num_g_per_batch, 1).zero_()
@@ -417,7 +416,6 @@ class Sggnn(nn.Module):
         label = torch.LongTensor(batch_size, batch_size, num_p_per_batch, num_g_per_batch).zero_()
         if use_gpu:
             d = d.cuda()
-            d_new = d_new.cuda()
             t = t.cuda()
             w = w.cuda()
             result = result.cuda()
@@ -438,8 +436,8 @@ class Sggnn(nn.Module):
 
             for i in range(num_p_per_batch):
                 for j in range(num_g_per_batch):
-                    d[k, :, i, j] = self.basemodel(x_p[:, i], x_g_temp[:, j])[0]
-                    t[k, :, i, j] = self.rf(d[k, :, i, j])
+                    feature = self.basemodel(x_p[:, i], x_g_temp[:, j])[0]
+                    t[k, :, i, j] = self.rf(feature)
                     label[k, :, i, j] = torch.where(y_p[:, i] == y_temp[:, j], torch.full_like(y_p[:, i], 1),
                                                     torch.full_like(y_p[:, i], 0))
 
@@ -450,7 +448,6 @@ class Sggnn(nn.Module):
                                                 torch.full_like(y_g[:, i], 0))
 
         d = d.reshape(batch_size, -1, len_feature)
-        d_new = d_new.reshape(batch_size, -1, len_feature)
         t = t.reshape(batch_size, -1, len_feature)
         w = w.reshape(batch_size * (num_img - 1), -1)
         label = label.reshape(batch_size, -1)
@@ -458,12 +455,13 @@ class Sggnn(nn.Module):
 
         # w need to be normalized
         w = self.preprocess_adj(w)
-        # for i in range(t.shape[-1]):
-        #     d_new[:, :, i] = torch.mm(t[:, :, i], w)
-        d_new = d
+        for i in range(t.shape[-1]):
+            d[:, :, i] = torch.mm(t[:, :, i], w)
+
 
         for i in range(num_p):
-            feature = self.fc(d_new[i, :])
+            # d_new[i, :] = self.rf(d_new[i, :])
+            feature = self.fc(d[i, :])
             feature = self.classifier(feature)
             result[i, :] = feature.squeeze()
 
