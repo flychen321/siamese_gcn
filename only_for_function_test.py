@@ -19,15 +19,30 @@ import scipy.sparse as sp
 # data = np.array([1, 2, 3, 4, 5, 6, 7])
 # c = sp.csc_matrix((data, indices, indptr), shape=(3, 3)).toarray()
 # print(c)
+# a = np.arange(16).reshape(4,4)
+# print(a)
+# for i in range(len(a)):
+#     print(i)
+#     b = a[:i]
+#     c = a[i:]
+#     d = np.concatenate((c,b), 0)
+#     print(b)
+#     print(c)
+#     print(d)
 
-a = np.random.rand(4,4)
-b = np.random.rand(4,4)
-print(a)
-print(b)
-print(a.dot(b))
+# a = torch.arange(16).reshape(4,4)
+# print(a)
+# for i in range(len(a)):
+#     print(i)
+#     b = a[:i]
+#     c = a[i:]
+#     d = torch.cat((c,b), 0)
+#     print(b)
+#     print(c)
+#     print(d)
 
-a = torch.from_numpy(a)
-b = torch.from_numpy(b)
+a = np.array([1,2,4,5,7,3,4])
 print(a)
+b = [1,1,1,]
+b = np.where(a >5, 10, 0)
 print(b)
-print(a.mm(b))

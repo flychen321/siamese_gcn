@@ -101,9 +101,10 @@ class SiameseDataset(Dataset):
         return len(self.mnist_dataset)
 
 
-class SggDataset_4images(Dataset):
+# class SggDataset_4images(Dataset):
+class SggDataset(Dataset):
     """
-    Train: For each sample creates randomly a positive or a negative pair
+    Train: For each sample creates randomly 4 images
     Test: Creates fixed pairs for testing
     """
 
@@ -123,58 +124,14 @@ class SggDataset_4images(Dataset):
             pass
 
     def __getitem__(self, index):
-        num = 4
+        img_num = 4
         label = self.train_labels[index].item()
-        if len(self.label_to_indices[label]) >= num:
-            index = np.random.choice(self.label_to_indices[label], size=num, replace=False)
-        else:
-            index1 = np.random.choice(self.label_to_indices[label], size=len(self.label_to_indices[label]), replace=False)
-            index2 = np.random.choice(self.label_to_indices[label], size=num - len(self.label_to_indices[label]),
-                                      replace=False)
-            index = np.concatenate((index1, index2))
-        for i in range(num):
-            img_temp = (self.train_data[index[0]])
-            label_temp = (self.train_labels[index[0]])
-            if type(label_temp) not in (tuple, list):
-                label_temp = (label_temp,)
-            label_temp = torch.LongTensor(label_temp)
-            img_temp = default_loader(img_temp)
-            if self.transform is not None:
-                img_temp = self.transform(img_temp)
-                img_temp = img_temp.unsqueeze(0)
-            if i == 0:
-                img = img_temp
-                label = label_temp
-            else:
-                img = torch.cat((img, img_temp), 0)
-                label = torch.cat((label, label_temp), 0)
+        img, label = self.__getimgs_bylabel__(label, img_num)
 
         return img, label
 
     def __len__(self):
         return len(self.base_dataset)
-
-
-class SggDataset(Dataset):
-    """
-    Train: For each sample creates randomly a positive or a negative pair
-    Test: Creates fixed pairs for testing
-    """
-
-    def __init__(self, base_dataset, train=True):
-        super(SggDataset, self).__init__()
-        self.base_dataset = base_dataset
-        self.train = train
-        self.transform = self.base_dataset.transform
-
-        if self.train:
-            self.train_labels = np.array(self.base_dataset.imgs)[:, 1].astype(int)
-            self.train_data = np.array(self.base_dataset.imgs)[:, 0]
-            self.labels_set = set(self.train_labels)
-            self.label_to_indices = {label: np.where(self.train_labels == label)[0]
-                                     for label in self.labels_set}
-        else:
-            pass
 
     def __getimgs_bylabel__(self, label, img_num):
         if len(self.label_to_indices[label]) >= img_num:
@@ -204,6 +161,28 @@ class SggDataset(Dataset):
         return img, label
 
 
+class SggDataset_48_4images(Dataset):
+    """
+    Train: For each sample creates randomly 48*4 images
+    Test: Creates fixed pairs for testing
+    """
+
+    def __init__(self, base_dataset, train=True):
+        super(SggDataset_48_4images, self).__init__()
+        self.base_dataset = base_dataset
+        self.train = train
+        self.transform = self.base_dataset.transform
+
+        if self.train:
+            self.train_labels = np.array(self.base_dataset.imgs)[:, 1].astype(int)
+            self.train_data = np.array(self.base_dataset.imgs)[:, 0]
+            self.labels_set = set(self.train_labels)
+            self.label_to_indices = {label: np.where(self.train_labels == label)[0]
+                                     for label in self.labels_set}
+        else:
+            pass
+
+
     def __getitem__(self, index):
         id_num = 2
         img_num = 3
@@ -223,6 +202,34 @@ class SggDataset(Dataset):
 
     def __len__(self):
         return len(self.base_dataset)
+
+    def __getimgs_bylabel__(self, label, img_num):
+        if len(self.label_to_indices[label]) >= img_num:
+            index = np.random.choice(self.label_to_indices[label], size=img_num, replace=False)
+        else:
+            index1 = np.random.choice(self.label_to_indices[label], size=len(self.label_to_indices[label]), replace=False)
+            index2 = np.random.choice(self.label_to_indices[label], size=img_num - len(self.label_to_indices[label]),
+                                      replace=True)
+            index = np.concatenate((index1, index2))
+        for i in range(img_num):
+            img_temp = (self.train_data[index[i]])
+            label_temp = (self.train_labels[index[i]])
+            if type(label_temp) not in (tuple, list):
+                label_temp = (label_temp,)
+            label_temp = torch.LongTensor(label_temp)
+            img_temp = default_loader(img_temp)
+            if self.transform is not None:
+                img_temp = self.transform(img_temp)
+                img_temp = img_temp.unsqueeze(0)
+            if i == 0:
+                img = img_temp
+                label = label_temp
+            else:
+                img = torch.cat((img, img_temp), 0)
+                label = torch.cat((label, label_temp), 0)
+
+        return img, label
+
 
 
 class TripletMNIST(Dataset):
