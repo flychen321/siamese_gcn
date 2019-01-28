@@ -623,12 +623,14 @@ class Sggnn_gcn(nn.Module):
         num_g_per_batch = len(d[0]) * len(d[0][0][0])  # 3
         len_feature = 1024
         t = torch.FloatTensor(d.shape).zero_()
+        d_new = torch.FloatTensor(d.shape).zero_()
         # this w for dynamic calculate the weight
         # w = torch.FloatTensor(batch_size, batch_size, num_g_per_batch, num_g_per_batch, 1).zero_()
         # this w for calculate the weight by label
         result = torch.FloatTensor(d.shape[: -1]).zero_()
         if use_gpu:
             d = d.cuda()
+            d_new = d_new.cuda()
             t = t.cuda()
             w = w.cuda()
             result = result.cuda()
@@ -641,6 +643,7 @@ class Sggnn_gcn(nn.Module):
                     t[k, :, i, j] = self.rf(d[k, :, i, j])
 
         d = d.reshape(batch_size, -1, len_feature)
+        d_new = d_new.reshape(batch_size, -1, len_feature)
         t = t.reshape(d.shape)
         w = w.reshape(batch_size * num_g_per_id, -1)
         label = label.reshape(batch_size, -1)
@@ -649,11 +652,11 @@ class Sggnn_gcn(nn.Module):
         # w need to be normalized
         w = self.preprocess_adj(w)
         for i in range(t.shape[-1]):
-            d[:, :, i] = torch.mm(t[:, :, i], w)
+            d_new[:, :, i] = torch.mm(t[:, :, i], w)
 
         # maybe need to fix
         for i in range(num_p_per_batch):
-            feature = self.fc(d[i, :])
+            feature = self.fc(d_new[i, :])
             feature = self.classifier(feature)
             result[i, :] = feature.squeeze()
 
