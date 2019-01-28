@@ -531,7 +531,7 @@ class Sggnn_siamese(nn.Module):
         # w = torch.FloatTensor(batch_size, batch_size, num_g_per_id, num_g_per_id, 1).zero_()
         # this w for calculate the weight by label
         w = torch.FloatTensor(batch_size, batch_size, num_g_per_id, num_g_per_id).zero_()
-        label = torch.LongTensor(batch_size, batch_size, num_p_per_id, num_g_per_id).zero_()
+        label = torch.FloatTensor(batch_size, batch_size, num_p_per_id, num_g_per_id).zero_()
 
         if use_gpu:
             d = d.cuda()
@@ -542,7 +542,7 @@ class Sggnn_siamese(nn.Module):
         y_p = y_p.unsqueeze(1)
         y_g = y[:, 1:]
 
-        print('batch_size = %d  num_p_per_batch = %d  num_g_per_batch = %d' % (batch_size, num_p_per_batch, num_g_per_batch))
+        # print('batch_size = %d  num_p_per_batch = %d  num_g_per_batch = %d' % (batch_size, num_p_per_batch, num_g_per_batch))
         for k in range(batch_size):
             x_g_temp1 = x_g[:k]
             x_g_temp2 = x_g[k:]
@@ -636,7 +636,7 @@ class Sggnn_gcn(nn.Module):
             result = result.cuda()
             label = label.cuda()
 
-        print('batch_size = %d  num_p_per_batch = %d  num_g_per_batch = %d' % (batch_size, num_p_per_batch, num_g_per_batch))
+        # print('batch_size = %d  num_p_per_batch = %d  num_g_per_batch = %d' % (batch_size, num_p_per_batch, num_g_per_batch))
         for k in range(batch_size):
             for i in range(num_p_per_id):
                 for j in range(num_g_per_id):

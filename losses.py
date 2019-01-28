@@ -15,7 +15,7 @@ class SigmoidLoss(nn.Module):
         self.eps = 1e-9
 
     def forward(self, predit, target, size_average=True):
-        predit = F.sigmoid(predit)
+        predit = torch.sigmoid(predit)
         losses = -(target.float() * torch.log(predit.squeeze()) + (1.0 - target).float() * torch.log(1 - predit.squeeze()))
         # losses = (predit.squeeze() - target.float()).pow(2)
         return losses.mean() if size_average else losses.sum()
