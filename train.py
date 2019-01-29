@@ -28,6 +28,7 @@ from scipy.io import loadmat
 from scipy.io import savemat
 from datasets import SiameseDataset, SggDataset
 from model import ft_net_dense, SiameseNet, Sggnn_siamese, Sggnn_gcn, Sggnn_end_to_end
+from model import save_network, save_whole_network, load_network_easy, load_network
 from losses import ContrastiveLoss, SigmoidLoss
 
 ######################################################################
@@ -75,49 +76,6 @@ data_transforms = {
     'train': transforms.Compose(transform_train_list),
     'val': transforms.Compose(transform_val_list),
 }
-
-
-######################################################################
-# Save model
-# ---------------------------
-def save_network(network, epoch_label):
-    save_filename = 'net_%s.pth' % epoch_label
-    save_path = os.path.join('./model', name, save_filename)
-    torch.save(network.state_dict(), save_path)
-    # this step is important, or error occurs "runtimeError: tensors are on different GPUs"
-
-def save_whole_network(network, epoch_label):
-    save_filename = 'net_%s.pth' % epoch_label
-    save_path = os.path.join('./model', name, save_filename)
-    torch.save(network, save_path)
-    # this step is important, or error occurs "runtimeError: tensors are on different GPUs"
-
-######################################################################
-# Load model
-# ----------single gpu training-----------------
-def load_network_easy(network, model_name=None):
-    if model_name == None:
-        save_path = os.path.join('./model', name, 'net_best.pth')
-    else:
-        save_path = model_name
-    print('load pretraind model: %s' % save_path)
-    network.load_state_dict(torch.load(save_path))
-    return network
-
-
-def load_network(network, model_name=None):
-    if model_name == None:
-        save_path = os.path.join('./model', name, 'net_best.pth')
-    else:
-        save_path = model_name
-    print('load pretrained model: %s' % save_path)
-    net_original = torch.load(save_path)
-    pretrained_dict = net_original.state_dict()
-    model_dict = network.state_dict()
-    pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-    model_dict.update(pretrained_dict)
-    network.load_state_dict(model_dict)
-    return network
 
 
 dataset_sizes = {}
@@ -302,8 +260,28 @@ if not os.path.isdir(dir_name):
 with open('%s/opts.json' % dir_name, 'w') as fp:
     json.dump(vars(opt), fp, indent=1)
 
+def stage_1_params(model):
+    # cnt = 0
+    # for m in model.children():
+    #     print('before  cnt = %d' % cnt)
+    #     print(m)
+    #     cnt += 1
+    #     print('cnt = %d' % cnt)
+    # exit()
+    stage_1_id = list(map(id, model.embedding_net.parameters())) \
+                 + list(map(id, model.bn.parameters())) \
+                 + list(map(id, model.fc.parameters())) \
+                 + list(map(id, model.classifier.parameters()))
+    stage_1_base_id = list(map(id, model.embedding_net.parameters()))
+    stage_1_base_params = filter(lambda p: id(p) in stage_1_base_id, model.parameters())
+    stage_1_classifier_params = filter(lambda p: id(p) in stage_1_id and id(p) not in stage_1_base_id,
+                                       model.parameters())
+
+    return stage_1_base_params, stage_1_classifier_params
+
+
 stage_1 = True
-stage_2 = True
+stage_2 = False
 
 if stage_1:
     margin = 1.
@@ -315,9 +293,19 @@ if stage_1:
     loss_fn = ContrastiveLoss(margin)
     # loss_fn = SigmoidLoss()
     # loss_fn = nn.CrossEntropyLoss()
+
     lr = 1e-3
+    step = 8
+
+    # stage_1_base_params, stage_1_classifier_params = stage_1_params(model)
+    # optimizer = optim.Adam([
+    #     {'params': stage_1_base_params, 'lr': 1 * lr},
+    #     {'params': stage_1_classifier_params, 'lr': 1 * lr},
+    # ])
+
     optimizer = optim.Adam(model.parameters(), lr=lr)
-    scheduler = lr_scheduler.StepLR(optimizer, 8, gamma=0.1, last_epoch=-1)
+
+    scheduler = lr_scheduler.StepLR(optimizer, step, gamma=0.1, last_epoch=-1)
     n_epochs = 2
     log_interval = 100
     model = train_model(dataloaders_siamese['train'], model, loss_fn, optimizer, num_epochs=n_epochs)
