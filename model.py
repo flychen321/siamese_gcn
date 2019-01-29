@@ -20,7 +20,7 @@ def save_network(network, epoch_label):
     # this step is important, or error occurs "runtimeError: tensors are on different GPUs"
 
 def save_whole_network(network, epoch_label):
-    save_filename = 'net_%s.pth' % epoch_label
+    save_filename = 'whole_net_%s.pth' % epoch_label
     save_path = os.path.join('./model', 'SGG_model', save_filename)
     torch.save(network, save_path)
     # this step is important, or error occurs "runtimeError: tensors are on different GPUs"
@@ -40,7 +40,7 @@ def load_network_easy(network, model_name=None):
 
 def load_network(network, model_name=None):
     if model_name == None:
-        save_path = os.path.join('./model', 'SGG_model', 'net_best.pth')
+        save_path = os.path.join('./model', 'SGG_model', 'whole_net_best.pth')
     else:
         save_path = model_name
     print('load pretrained model: %s' % save_path)
@@ -247,16 +247,15 @@ class SiameseNet(nn.Module):
         self.classifier = ClassBlock(input_dim=512, class_num=1)
 
     def forward(self, x1, x2=None):
-        if x2 is None:
-            x2 = x1
         output1 = self.embedding_net(x1)
+        if x2 is None:
+            return output1
         output2 = self.embedding_net(x2)
-
         feature = (output1 - output2).pow(2)
         # feature = self.bn(feature)
         feature_fc = self.fc(feature)
         result = self.classifier(feature_fc)
-        return feature, result, output1
+        return feature, result
 
         # return output1, output2
 

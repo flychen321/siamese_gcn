@@ -83,7 +83,7 @@ def extract_feature(model, dataloaders):
             with torch.no_grad():
                 outputs = model(input_img)
             ratio = float(opt.ratio) / 100.0
-            f = outputs[2].data.cpu()
+            f = outputs.data.cpu()
             ff = ff + f
         # norm feature
         fnorm = torch.norm(ff, p=2, dim=1, keepdim=True)  # L2 normalize
@@ -125,7 +125,7 @@ if opt.use_dense:
 else:
     model_structure = ft_net(751)
 # model = load_network(model_structure)
-model = load_network(model_structure)
+model = load_network_easy(model_structure)
 
 model.bn = nn.Sequential()
 model.fc = nn.Sequential()

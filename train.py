@@ -147,9 +147,12 @@ def train_model(train_loader, model, loss_fn, optimizer, num_epochs=25):
             loss.backward()
             optimizer.step()
             print('batch_idx = %4d  loss = %f' % (batch_idx, loss))
-
+        if (epoch + 1) % 5 == 0:
+            save_network(model, str(epoch + 1))
+            save_whole_network(model, str(epoch))
     time_elapsed = time.time() - since
     print('time = %f' % (time_elapsed))
+    save_network(model, 'best')
     save_whole_network(model, 'best')
     return model
 
@@ -286,6 +289,8 @@ if stage_1:
     # model = Sggnn(SiameseNet(embedding_net))
     if use_gpu:
         model.cuda()
+    # save_whole_network(model, 'best')
+    # exit()
     loss_fn = ContrastiveLoss(margin)
     # loss_fn = SigmoidLoss()
     # loss_fn = nn.CrossEntropyLoss()
@@ -302,7 +307,7 @@ if stage_1:
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     scheduler = lr_scheduler.StepLR(optimizer, step, gamma=0.1, last_epoch=-1)
-    n_epochs = 2
+    n_epochs = 20
     log_interval = 100
     model = train_model(dataloaders_siamese['train'], model, loss_fn, optimizer, num_epochs=n_epochs)
 

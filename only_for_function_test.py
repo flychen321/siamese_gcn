@@ -41,8 +41,7 @@ import scipy.sparse as sp
 #     print(c)
 #     print(d)
 
-a = np.array([1,2,4,5,7,3,4])
-print(a)
-b = [1,1,1,]
-b = np.where(a >5, 10, 0)
-print(b)
+a = np.ones((3, 5))*5
+b = np.ones((5,))*4
+c = np.subtract(a, b)
+print(c)

@@ -9,7 +9,8 @@ import time
 # qf: 1*1024, ql:1, qc:1,   gf: 19732*1024, gl: 19732, gc: 19732
 def evaluate(qf, ql, qc, gf, gl, gc):
     query = qf
-    score = np.dot(gf, query)  # cosine distance
+    # score = np.dot(gf, query)  # cosine distance
+    score = np.square(np.subtract(gf, query)).sum(1)  # Ed distance
     # predict index
     index = np.argsort(score)  # from small to large(small equals similar)
     index = index[::-1]  # reverse    19732*1
