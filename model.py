@@ -246,7 +246,9 @@ class SiameseNet(nn.Module):
         self.fc = FcBlock()
         self.classifier = ClassBlock(input_dim=512, class_num=1)
 
-    def forward(self, x1, x2):
+    def forward(self, x1, x2=None):
+        if x2 is None:
+            x2 = x1
         output1 = self.embedding_net(x1)
         output2 = self.embedding_net(x2)
 
@@ -254,7 +256,7 @@ class SiameseNet(nn.Module):
         # feature = self.bn(feature)
         feature_fc = self.fc(feature)
         result = self.classifier(feature_fc)
-        return feature, result
+        return feature, result, output1
 
         # return output1, output2
 
