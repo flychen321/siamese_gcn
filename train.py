@@ -92,13 +92,13 @@ dataloaders_siamese = {}
 dataloaders_gcn = {}
 
 dataloaders_siamese['train'] = DataLoader(
-    SiameseDataset(dataset, train=True), batch_size=opt.batchsize, shuffle=True, num_workers=8)
-# dataloaders['val'] = DataLoader(SiameseDataset(datasets.ImageFolder(dataset_val_dir, data_transforms['val']), train=True),
+    SiameseDataset(dataset), batch_size=opt.batchsize, shuffle=True, num_workers=8)
+# dataloaders['val'] = DataLoader(SiameseDataset(datasets.ImageFolder(dataset_val_dir, data_transforms['val'])),
 #                                 batch_size=opt.batchsize,
 #                                 shuffle=True, num_workers=8)
 
 dataloaders_gcn['train'] = DataLoader(
-    SggDataset(dataset, train=True), batch_size=opt.batchsize, shuffle=True, num_workers=8)
+    SggDataset(dataset), batch_size=opt.batchsize, shuffle=True, num_workers=8)
 
 
 # for data in dataloaders['train']:
@@ -280,7 +280,7 @@ def stage_1_params(model):
 
 
 stage_1 = True
-stage_2 = False
+stage_2 = True
 
 if stage_1:
     margin = 1.
@@ -307,7 +307,7 @@ if stage_1:
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     scheduler = lr_scheduler.StepLR(optimizer, step, gamma=0.1, last_epoch=-1)
-    n_epochs = 20
+    n_epochs = 1
     log_interval = 100
     model = train_model(dataloaders_siamese['train'], model, loss_fn, optimizer, num_epochs=n_epochs)
 
