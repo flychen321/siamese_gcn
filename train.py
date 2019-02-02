@@ -92,7 +92,7 @@ dataloaders_siamese = {}
 dataloaders_gcn = {}
 
 dataloaders_siamese['train'] = DataLoader(
-    SiameseDataset(dataset), batch_size=opt.batchsize, shuffle=True, num_workers=8)
+    SiameseDataset(dataset_train_dir, data_transforms['train']), batch_size=opt.batchsize, shuffle=True, num_workers=8)
 # dataloaders['val'] = DataLoader(SiameseDataset(datasets.ImageFolder(dataset_val_dir, data_transforms['val'])),
 #                                 batch_size=opt.batchsize,
 #                                 shuffle=True, num_workers=8)
