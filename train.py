@@ -98,7 +98,7 @@ dataloaders_siamese['train'] = DataLoader(
 #                                 shuffle=True, num_workers=8)
 
 dataloaders_gcn['train'] = DataLoader(
-    SggDataset(dataset), batch_size=opt.batchsize, shuffle=True, num_workers=8)
+    SggDataset(dataset_train_dir, data_transforms['train']), batch_size=opt.batchsize, shuffle=True, num_workers=8)
 
 
 # for data in dataloaders['train']:
@@ -279,7 +279,7 @@ def stage_1_params(model):
     return stage_1_base_params, stage_1_classifier_params
 
 
-stage_1 = True
+stage_1 = False
 stage_2 = True
 
 if stage_1:
